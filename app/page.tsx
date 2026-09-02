@@ -20,9 +20,18 @@ import {
   canPerformConversion,
   recordConversion,
   getCustomApiKey,
+  getProSessionToken,
 } from '@/lib/quota';
 import { SAMPLE_DOCUMENTS } from '@/lib/samples';
-import { FileSpreadsheet, Zap } from 'lucide-react';
+import {
+  FileSpreadsheet,
+  Zap,
+  KeyRound,
+  Crown,
+  Cpu,
+  AlertCircle,
+  X,
+} from 'lucide-react';
 
 export default function HomePage() {
   const [documentType, setDocumentType] = useState<DocumentType>('bank_statement');
@@ -31,6 +40,7 @@ export default function HomePage() {
   const [forceOffline, setForceOffline] = useState<boolean>(false);
   const [result, setResult] = useState<ParsedDocumentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [keyValidationPrompt, setKeyValidationPrompt] = useState<boolean>(false);
 
   // Quota & Modals state
   const [creditsState, setCreditsState] = useState<UserCreditsState>({
@@ -46,7 +56,8 @@ export default function HomePage() {
   const refreshUserData = () => {
     const quota = getUserQuota();
     setCreditsState(quota);
-    setHasCustomKey(!!getCustomApiKey());
+    const key = getCustomApiKey();
+    setHasCustomKey(Boolean(key && key.trim().length > 0));
   };
 
   useEffect(() => {
@@ -64,36 +75,62 @@ export default function HomePage() {
 
   const handleParse = async () => {
     setError(null);
+    setKeyValidationPrompt(false);
 
     // 1. Quota Check: If free quota exhausted and not pro, trigger Paywall modal
-    const { allowed } = canPerformConversion();
-    if (!allowed) {
+    const { allowed, isPro } = canPerformConversion();
+    if (!allowed && !isPro) {
       setIsPaywallOpen(true);
+      return;
+    }
+
+    // 2. Hybrid Key Validation Check for Free Tier:
+    // If user is on Free tier, has NOT entered their own API key, and did NOT check 'Offline Engine'
+    const customKey = getCustomApiKey();
+    if (!isPro && !forceOffline && (!customKey || customKey.trim() === '')) {
+      setKeyValidationPrompt(true);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const customKey = getCustomApiKey();
+      const proToken = getProSessionToken();
 
-      const response = await fetch('/api/parse', {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (isPro && proToken) {
+        headers['x-pro-token'] = proToken;
+        headers['authorization'] = `Bearer ${proToken}`;
+      } else if (customKey) {
+        headers['x-client-api-key'] = customKey.trim();
+      }
+
+      const response = await fetch('/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           text: inputText,
           documentType,
-          customApiKey: customKey || undefined,
           forceOffline,
+          proToken: isPro ? proToken : undefined,
+          customApiKey: !isPro ? customKey : undefined,
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to parse document');
+        if (data.error === 'FREE_TIER_KEY_REQUIRED') {
+          setKeyValidationPrompt(true);
+          return;
+        }
+        throw new Error(data.error || data.message || 'Failed to parse document');
       }
 
-      const parsedData: ParsedDocumentResult = await response.json();
+      const parsedData: ParsedDocumentResult = data;
       setResult(parsedData);
 
       // Record successful conversion
@@ -136,6 +173,11 @@ export default function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleUseOfflineEngine = () => {
+    setForceOffline(true);
+    setKeyValidationPrompt(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#fafafa] text-zinc-900 flex flex-col font-sans selection:bg-zinc-900 selection:text-white">
       {/* Top Header */}
@@ -158,7 +200,7 @@ export default function HomePage() {
             Structure Any Document Text in Seconds
           </h1>
           <p className="text-sm text-zinc-600">
-            Paste unstructured bank statements, invoices, or lease agreements. Our AI extracts
+            Paste unstructured bank statements, invoices, or lease agreements. Our hybrid AI & offline engine extracts
             precise rows and columns for 1-click spreadsheet download.
           </p>
         </section>
@@ -173,7 +215,7 @@ export default function HomePage() {
         </section>
 
         {/* Input Zone (Drop, Paste, Sample) */}
-        <section className="max-w-4xl mx-auto">
+        <section className="max-w-4xl mx-auto space-y-4">
           <InputZone
             text={inputText}
             onChangeText={setInputText}
@@ -185,9 +227,71 @@ export default function HomePage() {
             onToggleForceOffline={setForceOffline}
           />
 
+          {/* Minimalist Validation Message when Free User needs Key / Offline / PRO */}
+          {keyValidationPrompt && (
+            <div className="p-4 rounded-xl bg-zinc-900 text-white border border-zinc-800 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-zinc-800 text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <KeyRound className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
+                      API Key Required on Free Tier
+                    </h4>
+                    <p className="text-xs text-zinc-300 leading-relaxed max-w-2xl">
+                      Free users must provide their personal Gemini API key in Settings, use the 100% Offline Engine, or upgrade to PRO to use our managed high-speed AI infrastructure.
+                    </p>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap items-center gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setIsSettingsOpen(true)}
+                        className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-zinc-900 hover:bg-zinc-100 transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <KeyRound className="w-3.5 h-3.5" />
+                        <span>Enter Gemini Key</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleUseOfflineEngine}
+                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Cpu className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Use 100% Offline Engine</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsPaywallOpen(true)}
+                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-amber-500 hover:bg-amber-600 text-zinc-950 transition-colors flex items-center gap-1.5 cursor-pointer font-semibold"
+                      >
+                        <Crown className="w-3.5 h-3.5" />
+                        <span>Upgrade to PRO ($19/mo)</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setKeyValidationPrompt(false)}
+                  className="text-zinc-400 hover:text-white p-1 rounded-md transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
           {error && (
-            <div className="mt-4 p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center justify-between">
-              <span>{error}</span>
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <span>{error}</span>
+              </div>
               <button
                 onClick={() => setError(null)}
                 className="font-semibold underline hover:text-red-900 cursor-pointer"
@@ -247,7 +351,7 @@ export default function HomePage() {
               onClick={() => setIsSettingsOpen(true)}
               className="hover:text-zinc-900 underline cursor-pointer"
             >
-              Developer Settings
+              Developer Settings & API Key
             </button>
           </div>
         </div>
@@ -265,6 +369,7 @@ export default function HomePage() {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         onRefreshState={refreshUserData}
+        isPro={creditsState.isPro}
       />
     </div>
   );
