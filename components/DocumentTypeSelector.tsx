@@ -48,10 +48,10 @@ export const DocumentTypeSelector: React.FC<DocumentTypeSelectorProps> = ({
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-2">
-        <label className="text-xs font-semibold uppercase tracking-wider text-zinc-600">
+        <label className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
           Target Schema / Document Type
         </label>
-        <span className="text-xs text-zinc-600">
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
           Auto-structures output into columns
         </span>
       </div>
@@ -67,17 +67,19 @@ export const DocumentTypeSelector: React.FC<DocumentTypeSelectorProps> = ({
               type="button"
               disabled={disabled}
               onClick={() => onSelect(option.id)}
-              className={`flex flex-col text-left p-3.5 rounded-lg border transition-all ${
+              className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
                 isSelected
-                  ? 'border-zinc-900 bg-zinc-900 text-white shadow-xs'
-                  : 'border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50/50 text-zinc-900'
+                  ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                  : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 text-zinc-900 dark:text-zinc-100'
               } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <div className="flex items-center justify-between w-full mb-1.5">
                 <div className="flex items-center gap-2">
                   <Icon
                     className={`w-4 h-4 ${
-                      isSelected ? 'text-zinc-100' : 'text-zinc-600'
+                      isSelected
+                        ? 'text-zinc-100 dark:text-zinc-900'
+                        : 'text-zinc-500 dark:text-zinc-400'
                     }`}
                   />
                   <span className="text-sm font-semibold tracking-tight">
@@ -87,8 +89,8 @@ export const DocumentTypeSelector: React.FC<DocumentTypeSelectorProps> = ({
                 <span
                   className={`text-[10px] font-medium px-2 py-0.5 rounded-md ${
                     isSelected
-                      ? 'bg-zinc-800 text-zinc-300'
-                      : 'bg-zinc-100 text-zinc-600'
+                      ? 'bg-zinc-800 text-zinc-300 dark:bg-zinc-200 dark:text-zinc-800'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400'
                   }`}
                 >
                   {option.badge}
@@ -96,7 +98,9 @@ export const DocumentTypeSelector: React.FC<DocumentTypeSelectorProps> = ({
               </div>
               <p
                 className={`text-xs line-clamp-2 ${
-                  isSelected ? 'text-zinc-300' : 'text-zinc-600'
+                  isSelected
+                    ? 'text-zinc-300 dark:text-zinc-700'
+                    : 'text-zinc-500 dark:text-zinc-400'
                 }`}
               >
                 {option.description}

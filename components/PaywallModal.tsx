@@ -119,26 +119,26 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden transition-colors">
         {/* Modal Header */}
-        <div className="p-6 border-b border-zinc-100 flex items-start justify-between bg-zinc-50/50">
+        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex items-start justify-between bg-zinc-50/50 dark:bg-zinc-950/40">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
               <Crown className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-zinc-900 tracking-tight">
+              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">
                 Unlock DocToSheet Pro
               </h2>
-              <p className="text-xs text-zinc-600">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 {user ? `Account: ${user.email}` : '2 free conversions completed.'}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/60 rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200/60 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -152,8 +152,8 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
               onClick={() => setSelectedPlan('monthly')}
               className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative ${
                 selectedPlan === 'monthly'
-                  ? 'border-zinc-900 bg-zinc-900 text-white'
-                  : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-900'
+                  ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950'
+                  : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 text-zinc-900 dark:text-zinc-100'
               }`}
             >
               <div className="flex justify-between items-center mb-1">
@@ -161,16 +161,16 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                   Monthly Pro
                 </span>
                 {selectedPlan === 'monthly' && (
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <Check className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
                 )}
               </div>
               <div className="text-2xl font-black tracking-tight">
                 ${calculatePrice(19)}
-                <span className={`text-xs font-normal ${selectedPlan === 'monthly' ? 'text-zinc-300' : 'text-zinc-600'}`}>
+                <span className={`text-xs font-normal ${selectedPlan === 'monthly' ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
                   /mo
                 </span>
               </div>
-              <p className={`text-[11px] mt-1 ${selectedPlan === 'monthly' ? 'text-zinc-300' : 'text-zinc-600'}`}>
+              <p className={`text-[11px] mt-1 ${selectedPlan === 'monthly' ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
                 Cancel anytime. Zero commitment.
               </p>
             </div>
@@ -180,8 +180,8 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
               onClick={() => setSelectedPlan('lifetime')}
               className={`p-4 rounded-xl border-2 transition-all cursor-pointer relative ${
                 selectedPlan === 'lifetime'
-                  ? 'border-zinc-900 bg-zinc-900 text-white'
-                  : 'border-zinc-200 bg-white hover:border-zinc-300 text-zinc-900'
+                  ? 'border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-950'
+                  : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700 text-zinc-900 dark:text-zinc-100'
               }`}
             >
               <div className="flex justify-between items-center mb-1">
@@ -194,11 +194,11 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
               </div>
               <div className="text-2xl font-black tracking-tight">
                 ${calculatePrice(99)}
-                <span className={`text-xs font-normal ${selectedPlan === 'lifetime' ? 'text-zinc-300' : 'text-zinc-600'}`}>
+                <span className={`text-xs font-normal ${selectedPlan === 'lifetime' ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
                   {' '}pay once
                 </span>
               </div>
-              <p className={`text-[11px] mt-1 ${selectedPlan === 'lifetime' ? 'text-zinc-300' : 'text-zinc-600'}`}>
+              <p className={`text-[11px] mt-1 ${selectedPlan === 'lifetime' ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-500 dark:text-zinc-400'}`}>
                 Perpetual license for solo builders.
               </p>
             </div>
@@ -206,30 +206,30 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
 
           {/* Pro Features Included */}
           <div className="space-y-2.5 pt-1">
-            <span className="text-xs font-semibold text-zinc-600 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
               Everything in Pro:
             </span>
-            <ul className="space-y-2 text-xs text-zinc-700">
+            <ul className="space-y-2 text-xs text-zinc-700 dark:text-zinc-300">
               <li className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
                   <Check className="w-2.5 h-2.5" />
                 </div>
                 <span><strong>Unlimited</strong> document-to-sheet conversions</span>
               </li>
               <li className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
                   <Check className="w-2.5 h-2.5" />
                 </div>
                 <span>Managed Gemini 1.5 Flash High-Speed AI Engine</span>
               </li>
               <li className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
                   <Check className="w-2.5 h-2.5" />
                 </div>
                 <span>1-Click direct <strong>Excel (.XLS)</strong>, <strong>CSV</strong>, and TSV exports</span>
               </li>
               <li className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
                   <Check className="w-2.5 h-2.5" />
                 </div>
                 <span>Persistent User Profile & Multiple Device Sync</span>
@@ -238,33 +238,33 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           </div>
 
           {/* Promo Code Input */}
-          <div className="pt-2 border-t border-zinc-100">
+          <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Tag className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+                <Tag className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
                 <input
                   type="text"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value)}
                   placeholder="Coupon code (e.g. LAUNCH50)"
-                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-zinc-200 uppercase text-zinc-900 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-900"
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 uppercase text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100"
                 />
               </div>
               <button
                 type="button"
                 onClick={handleApplyPromo}
-                className="px-3 py-1.5 text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-lg transition-colors cursor-pointer"
+                className="px-3 py-1.5 text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-lg transition-colors cursor-pointer"
               >
                 Apply
               </button>
             </div>
             {promoApplied && (
-              <p className="text-[11px] text-emerald-600 font-medium mt-1">
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
                 ✓ Promo code applied! {discountAmount}% discount saved.
               </p>
             )}
             {errorMsg && (
-              <p className="text-[11px] text-red-600 font-medium mt-1">{errorMsg}</p>
+              <p className="text-[11px] text-red-600 dark:text-red-400 font-medium mt-1">{errorMsg}</p>
             )}
           </div>
 
@@ -273,16 +273,16 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
             type="button"
             onClick={handleSimulatePayment}
             disabled={isProcessing}
-            className="w-full py-3 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 text-white font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
             {isProcessing ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin text-zinc-300" />
+                <Loader2 className="w-4 h-4 animate-spin text-zinc-300 dark:text-zinc-700" />
                 <span>Authorizing Stripe Checkout...</span>
               </>
             ) : (
               <>
-                <CreditCard className="w-4 h-4 text-emerald-400" />
+                <CreditCard className="w-4 h-4 text-emerald-400 dark:text-emerald-600" />
                 <span>
                   Activate Pro Tier (${calculatePrice(selectedPlan === 'monthly' ? 19 : 99)})
                 </span>
@@ -293,8 +293,8 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
 
           {/* Existing License Key Toggle */}
           <div className="pt-2 text-center">
-            <details className="text-left text-xs text-zinc-600">
-              <summary className="cursor-pointer text-zinc-600 hover:text-zinc-900 font-medium select-none">
+            <details className="text-left text-xs text-zinc-500 dark:text-zinc-400">
+              <summary className="cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-100 font-medium select-none">
                 Already have a license key or test coupon?
               </summary>
               <div className="flex gap-2 mt-2">
@@ -303,12 +303,12 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                   value={licenseKeyInput}
                   onChange={(e) => setLicenseKeyInput(e.target.value)}
                   placeholder="PRO-UNLIMITED-2025"
-                  className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-zinc-200 uppercase font-mono text-zinc-900"
+                  className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 uppercase font-mono text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600"
                 />
                 <button
                   type="button"
                   onClick={handleActivateWithLicenseKey}
-                  className="px-3 py-1.5 text-xs font-semibold bg-zinc-900 text-white rounded-lg hover:bg-zinc-800 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 text-xs font-semibold bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 text-white rounded-lg transition-colors cursor-pointer"
                 >
                   Unlock
                 </button>
@@ -318,8 +318,8 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
         </div>
 
         {/* Security badge footer */}
-        <div className="px-6 py-3 bg-zinc-50 border-t border-zinc-100 flex items-center justify-center gap-2 text-[11px] text-zinc-600">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+        <div className="px-6 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
           <span>Encrypted 256-bit Stripe checkout simulation • 30-day money-back guarantee</span>
         </div>
       </div>

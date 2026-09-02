@@ -173,7 +173,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] text-zinc-900 flex flex-col font-sans selection:bg-zinc-900 selection:text-white">
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-zinc-900 selection:text-white dark:selection:bg-zinc-100 dark:selection:text-zinc-950 transition-colors duration-200">
       {/* Top Header */}
       <Header
         user={user}
@@ -186,14 +186,14 @@ export default function HomePage() {
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Intro Hero Badge & Description */}
         <section className="text-center max-w-2xl mx-auto space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 text-xs font-medium">
-            <Zap className="w-3.5 h-3.5 text-zinc-900" />
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium">
+            <Zap className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100" />
             <span>Instant Document Text to CSV / Excel Generator</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-zinc-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
             Structure Any Document Text in Seconds
           </h1>
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
             Paste unstructured bank statements, invoices, or lease agreements. Our hybrid AI & offline engine extracts
             precise rows and columns for 1-click spreadsheet download.
           </p>
@@ -231,10 +231,10 @@ export default function HomePage() {
 
           {/* Minimalist Validation Message when Free User needs Key / Offline / PRO */}
           {keyValidationPrompt && (
-            <div className="p-4 rounded-xl bg-zinc-900 text-white border border-zinc-800 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="p-4 rounded-xl bg-zinc-900 dark:bg-zinc-800 text-white border border-zinc-800 dark:border-zinc-700 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-zinc-800 text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-zinc-800 dark:bg-zinc-700 text-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <KeyRound className="w-4 h-4" />
                   </div>
                   <div className="space-y-1">
@@ -250,7 +250,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => setIsSettingsOpen(true)}
-                        className="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-zinc-900 hover:bg-zinc-100 transition-colors flex items-center gap-1.5 cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-white text-zinc-900 hover:bg-zinc-100 transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
                         <KeyRound className="w-3.5 h-3.5" />
                         <span>Enter Gemini Key</span>
@@ -259,7 +259,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={handleUseOfflineEngine}
-                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-zinc-800 text-zinc-200 hover:bg-zinc-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 dark:bg-zinc-700 text-zinc-200 hover:bg-zinc-700 dark:hover:bg-zinc-600 transition-colors flex items-center gap-1.5 cursor-pointer"
                       >
                         <Cpu className="w-3.5 h-3.5 text-emerald-400" />
                         <span>Use 100% Offline Engine</span>
@@ -268,7 +268,7 @@ export default function HomePage() {
                       <button
                         type="button"
                         onClick={() => setIsPaywallOpen(true)}
-                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-amber-500 hover:bg-amber-600 text-zinc-950 transition-colors flex items-center gap-1.5 cursor-pointer font-semibold"
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-500 hover:bg-amber-600 text-zinc-950 transition-colors flex items-center gap-1.5 cursor-pointer font-semibold"
                       >
                         <Crown className="w-3.5 h-3.5" />
                         <span>Upgrade to PRO ($19/mo)</span>
@@ -280,7 +280,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => setKeyValidationPrompt(false)}
-                  className="text-zinc-400 hover:text-white p-1 rounded-md transition-colors"
+                  className="text-zinc-400 hover:text-white p-1 rounded-md transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -289,14 +289,14 @@ export default function HomePage() {
           )}
 
           {error && (
-            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center justify-between">
+            <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-xs text-red-700 dark:text-red-300 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
                 <span>{error}</span>
               </div>
               <button
                 onClick={() => setError(null)}
-                className="font-semibold underline hover:text-red-900 cursor-pointer"
+                className="font-semibold underline hover:text-red-900 dark:hover:text-red-100 cursor-pointer"
               >
                 Dismiss
               </button>
@@ -310,14 +310,14 @@ export default function HomePage() {
             id="results-section"
             className="max-w-5xl mx-auto space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300"
           >
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3">
               <div className="flex items-center gap-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <h2 className="text-base font-bold text-zinc-900">
+                <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
                   Extracted Structured Dataset
                 </h2>
               </div>
-              <span className="text-xs text-zinc-600 font-mono">
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
                 {result.rows.length} records ready
               </span>
             </div>
@@ -339,21 +339,21 @@ export default function HomePage() {
       </main>
 
       {/* Minimalist Footer */}
-      <footer className="w-full border-t border-zinc-200 bg-white py-6 mt-16 text-center">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-600">
+      <footer className="w-full border-t border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 py-6 mt-16 text-center transition-colors">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-500 dark:text-zinc-400">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet className="w-4 h-4 text-zinc-600" />
-            <span className="font-semibold text-zinc-700">DocToSheet AI</span>
+            <FileSpreadsheet className="w-4 h-4 text-zinc-600 dark:text-zinc-400" />
+            <span className="font-semibold text-zinc-700 dark:text-zinc-300">DocToSheet AI</span>
             <span>• Micro-SaaS for Solo Developers</span>
           </div>
-          <div className="flex items-center gap-4 text-zinc-600">
+          <div className="flex items-center gap-4 text-zinc-500 dark:text-zinc-400">
             <span>
               {user ? `Authenticated as ${user.email}` : 'Guest Session'}
             </span>
             <span>•</span>
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="hover:text-zinc-900 underline cursor-pointer"
+              className="hover:text-zinc-900 dark:hover:text-zinc-100 underline cursor-pointer"
             >
               Developer Settings & API Key
             </button>

@@ -15,22 +15,22 @@ export const StatCards: React.FC<StatCardsProps> = ({ result }) => {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {/* Total Rows */}
-      <div className="p-3.5 bg-white rounded-lg border border-zinc-200">
-        <div className="flex items-center justify-between text-zinc-600 mb-1">
+      <div className="p-3.5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 transition-colors">
+        <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-1">
           <span className="text-[11px] font-medium uppercase tracking-wider">Total Records</span>
           <Layers className="w-3.5 h-3.5" />
         </div>
-        <div className="text-xl font-bold text-zinc-900">{rows.length}</div>
-        <div className="text-[11px] text-zinc-600 mt-0.5">{columns.length} columns defined</div>
+        <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">{rows.length}</div>
+        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">{columns.length} columns defined</div>
       </div>
 
       {/* Net Amount if applicable */}
-      <div className="p-3.5 bg-white rounded-lg border border-zinc-200">
-        <div className="flex items-center justify-between text-zinc-600 mb-1">
+      <div className="p-3.5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 transition-colors">
+        <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-1">
           <span className="text-[11px] font-medium uppercase tracking-wider">Net Amount / Total</span>
           <DollarSign className="w-3.5 h-3.5" />
         </div>
-        <div className="text-xl font-bold text-zinc-900">
+        <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
           {typeof metadata.totalAmount === 'number'
             ? `$${Math.abs(metadata.totalAmount).toLocaleString('en-US', {
                 minimumFractionDigits: 2,
@@ -38,37 +38,37 @@ export const StatCards: React.FC<StatCardsProps> = ({ result }) => {
               })}`
             : 'N/A'}
         </div>
-        <div className="text-[11px] text-zinc-600 mt-0.5">
+        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
           {isNetDebit ? 'Net Outflow / Debit' : 'Calculated sum'}
         </div>
       </div>
 
       {/* Processing Engine */}
-      <div className="p-3.5 bg-white rounded-lg border border-zinc-200">
-        <div className="flex items-center justify-between text-zinc-600 mb-1">
+      <div className="p-3.5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 transition-colors">
+        <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-1">
           <span className="text-[11px] font-medium uppercase tracking-wider">Parsing Engine</span>
           <Cpu className="w-3.5 h-3.5" />
         </div>
-        <div className="text-xs font-semibold text-zinc-900 truncate">
+        <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
           {metadata.engine === 'gemini-1.5-flash'
             ? 'Gemini 1.5 Flash'
             : metadata.engine === 'custom-gemini'
             ? 'Custom Gemini Key'
             : 'Deterministic Engine'}
         </div>
-        <div className="text-[11px] text-emerald-600 mt-1 font-medium">✓ Structured Output Validated</div>
+        <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 font-medium">✓ Structured & Validated</div>
       </div>
 
       {/* Latency / Speed */}
-      <div className="p-3.5 bg-white rounded-lg border border-zinc-200">
-        <div className="flex items-center justify-between text-zinc-600 mb-1">
+      <div className="p-3.5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 transition-colors">
+        <div className="flex items-center justify-between text-zinc-500 dark:text-zinc-400 mb-1">
           <span className="text-[11px] font-medium uppercase tracking-wider">Speed</span>
           <Clock className="w-3.5 h-3.5" />
         </div>
-        <div className="text-xl font-bold text-zinc-900">
+        <div className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
           {metadata.processingTimeMs ? `${metadata.processingTimeMs}ms` : '< 100ms'}
         </div>
-        <div className="text-[11px] text-zinc-600 mt-0.5">Instant Sheet Ready</div>
+        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">Instant Sheet Ready</div>
       </div>
     </div>
   );
