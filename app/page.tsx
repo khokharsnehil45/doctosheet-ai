@@ -1,101 +1,271 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useState, useEffect } from 'react';
+import { Header } from '@/components/Header';
+import { DocumentTypeSelector } from '@/components/DocumentTypeSelector';
+import { InputZone } from '@/components/InputZone';
+import { StatCards } from '@/components/StatCards';
+import { PreviewTable } from '@/components/PreviewTable';
+import { ExportToolbar } from '@/components/ExportToolbar';
+import { PaywallModal } from '@/components/PaywallModal';
+import { SettingsModal } from '@/components/SettingsModal';
+import {
+  DocumentType,
+  ParsedDocumentResult,
+  UserCreditsState,
+  TableRow,
+} from '@/lib/types';
+import {
+  getUserQuota,
+  canPerformConversion,
+  recordConversion,
+  getCustomApiKey,
+} from '@/lib/quota';
+import { SAMPLE_DOCUMENTS } from '@/lib/samples';
+import { FileSpreadsheet, Zap } from 'lucide-react';
+
+export default function HomePage() {
+  const [documentType, setDocumentType] = useState<DocumentType>('bank_statement');
+  const [inputText, setInputText] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [forceOffline, setForceOffline] = useState<boolean>(false);
+  const [result, setResult] = useState<ParsedDocumentResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Quota & Modals state
+  const [creditsState, setCreditsState] = useState<UserCreditsState>({
+    creditsUsed: 0,
+    maxFreeCredits: 2,
+    isPro: false,
+  });
+  const [isPaywallOpen, setIsPaywallOpen] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [hasCustomKey, setHasCustomKey] = useState<boolean>(false);
+
+  // Initialize quota from localStorage
+  const refreshUserData = () => {
+    const quota = getUserQuota();
+    setCreditsState(quota);
+    setHasCustomKey(!!getCustomApiKey());
+  };
+
+  useEffect(() => {
+    refreshUserData();
+    // Default load bank statement sample for convenience
+    setInputText(SAMPLE_DOCUMENTS['bank_statement'].rawText);
+  }, []);
+
+  const handleDocumentTypeChange = (type: DocumentType) => {
+    setDocumentType(type);
+    if (!inputText || Object.values(SAMPLE_DOCUMENTS).some((s) => s.rawText === inputText)) {
+      setInputText(SAMPLE_DOCUMENTS[type]?.rawText || '');
+    }
+  };
+
+  const handleParse = async () => {
+    setError(null);
+
+    // 1. Quota Check: If free quota exhausted and not pro, trigger Paywall modal
+    const { allowed } = canPerformConversion();
+    if (!allowed) {
+      setIsPaywallOpen(true);
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const customKey = getCustomApiKey();
+
+      const response = await fetch('/api/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: inputText,
+          documentType,
+          customApiKey: customKey || undefined,
+          forceOffline,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to parse document');
+      }
+
+      const parsedData: ParsedDocumentResult = await response.json();
+      setResult(parsedData);
+
+      // Record successful conversion
+      const updatedQuota = recordConversion();
+      setCreditsState(updatedQuota);
+
+      // Smooth scroll to results
+      setTimeout(() => {
+        const resultsEl = document.getElementById('results-section');
+        if (resultsEl) {
+          resultsEl.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'An error occurred during extraction. Please try again.';
+      console.error('Parse error:', message);
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateRows = (updatedRows: TableRow[]) => {
+    if (!result) return;
+    setResult({
+      ...result,
+      rows: updatedRows,
+      metadata: {
+        ...result.metadata,
+        totalRows: updatedRows.length,
+      },
+    });
+  };
+
+  const handleReset = () => {
+    setResult(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-[#fafafa] text-zinc-900 flex flex-col font-sans selection:bg-zinc-900 selection:text-white">
+      {/* Top Header */}
+      <Header
+        credits={creditsState}
+        onOpenUpgrade={() => setIsPaywallOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        hasCustomKey={hasCustomKey}
+      />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Main Single-Screen Workspace */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
+        {/* Intro Hero Badge & Description */}
+        <section className="text-center max-w-2xl mx-auto space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 text-xs font-medium">
+            <Zap className="w-3.5 h-3.5 text-zinc-900" />
+            <span>Instant Document Text to CSV / Excel Generator</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-zinc-900 tracking-tight">
+            Structure Any Document Text in Seconds
+          </h1>
+          <p className="text-sm text-zinc-600">
+            Paste unstructured bank statements, invoices, or lease agreements. Our AI extracts
+            precise rows and columns for 1-click spreadsheet download.
+          </p>
+        </section>
+
+        {/* Format Selector */}
+        <section className="max-w-4xl mx-auto">
+          <DocumentTypeSelector
+            selectedType={documentType}
+            onSelect={handleDocumentTypeChange}
+            disabled={isLoading}
+          />
+        </section>
+
+        {/* Input Zone (Drop, Paste, Sample) */}
+        <section className="max-w-4xl mx-auto">
+          <InputZone
+            text={inputText}
+            onChangeText={setInputText}
+            documentType={documentType}
+            onSelectDocumentType={handleDocumentTypeChange}
+            onParse={handleParse}
+            isLoading={isLoading}
+            forceOffline={forceOffline}
+            onToggleForceOffline={setForceOffline}
+          />
+
+          {error && (
+            <div className="mt-4 p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center justify-between">
+              <span>{error}</span>
+              <button
+                onClick={() => setError(null)}
+                className="font-semibold underline hover:text-red-900 cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* Structured Results Display (Hidden by default until parsed) */}
+        {result && (
+          <section
+            id="results-section"
+            className="max-w-5xl mx-auto space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300"
           >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <h2 className="text-base font-bold text-zinc-900">
+                  Extracted Structured Dataset
+                </h2>
+              </div>
+              <span className="text-xs text-zinc-600 font-mono">
+                {result.rows.length} records ready
+              </span>
+            </div>
+
+            {/* Quick Stat Cards */}
+            <StatCards result={result} />
+
+            {/* Export Toolbar */}
+            <ExportToolbar result={result} onReset={handleReset} />
+
+            {/* Editable Data Table */}
+            <PreviewTable
+              columns={result.columns}
+              rows={result.rows}
+              onUpdateRows={handleUpdateRows}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+          </section>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* Minimalist Footer */}
+      <footer className="w-full border-t border-zinc-200 bg-white py-6 mt-16 text-center">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-zinc-600">
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="w-4 h-4 text-zinc-600" />
+            <span className="font-semibold text-zinc-700">DocToSheet AI</span>
+            <span>• Micro-SaaS for Solo Developers</span>
+          </div>
+          <div className="flex items-center gap-4 text-zinc-600">
+            <span>Client-side Privacy & UTF-8 BOM Compliant</span>
+            <span>•</span>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="hover:text-zinc-900 underline cursor-pointer"
+            >
+              Developer Settings
+            </button>
+          </div>
+        </div>
       </footer>
+
+      {/* Paywall / Pro Upgrade Modal */}
+      <PaywallModal
+        isOpen={isPaywallOpen}
+        onClose={() => setIsPaywallOpen(false)}
+        onSuccessUnlock={refreshUserData}
+      />
+
+      {/* Settings / API Key Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onRefreshState={refreshUserData}
+      />
     </div>
   );
 }
