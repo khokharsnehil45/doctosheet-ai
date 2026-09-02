@@ -9,20 +9,14 @@ import { PreviewTable } from '@/components/PreviewTable';
 import { ExportToolbar } from '@/components/ExportToolbar';
 import { PaywallModal } from '@/components/PaywallModal';
 import { SettingsModal } from '@/components/SettingsModal';
+import { AuthPromptCard } from '@/components/AuthPromptCard';
 import {
   DocumentType,
   ParsedDocumentResult,
-  UserCreditsState,
   TableRow,
 } from '@/lib/types';
-import {
-  getUserQuota,
-  canPerformConversion,
-  recordConversion,
-  getCustomApiKey,
-  getProSessionToken,
-} from '@/lib/quota';
 import { SAMPLE_DOCUMENTS } from '@/lib/samples';
+import { useAuth } from '@/lib/AuthContext';
 import {
   FileSpreadsheet,
   Zap,
@@ -34,6 +28,8 @@ import {
 } from 'lucide-react';
 
 export default function HomePage() {
+  const { user, loginGuest, logout, recordConversion } = useAuth();
+
   const [documentType, setDocumentType] = useState<DocumentType>('bank_statement');
   const [inputText, setInputText] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -41,27 +37,13 @@ export default function HomePage() {
   const [result, setResult] = useState<ParsedDocumentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [keyValidationPrompt, setKeyValidationPrompt] = useState<boolean>(false);
+  const [authPrompt, setAuthPrompt] = useState<boolean>(false);
 
-  // Quota & Modals state
-  const [creditsState, setCreditsState] = useState<UserCreditsState>({
-    creditsUsed: 0,
-    maxFreeCredits: 2,
-    isPro: false,
-  });
+  // Modals state
   const [isPaywallOpen, setIsPaywallOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [hasCustomKey, setHasCustomKey] = useState<boolean>(false);
-
-  // Initialize quota from localStorage
-  const refreshUserData = () => {
-    const quota = getUserQuota();
-    setCreditsState(quota);
-    const key = getCustomApiKey();
-    setHasCustomKey(Boolean(key && key.trim().length > 0));
-  };
 
   useEffect(() => {
-    refreshUserData();
     // Default load bank statement sample for convenience
     setInputText(SAMPLE_DOCUMENTS['bank_statement'].rawText);
   }, []);
@@ -76,18 +58,28 @@ export default function HomePage() {
   const handleParse = async () => {
     setError(null);
     setKeyValidationPrompt(false);
+    setAuthPrompt(false);
 
-    // 1. Quota Check: If free quota exhausted and not pro, trigger Paywall modal
-    const { allowed, isPro } = canPerformConversion();
-    if (!allowed && !isPro) {
+    // 1. Authentication Guard: If no user session exists, prompt for Auth
+    if (!user) {
+      setAuthPrompt(true);
+      return;
+    }
+
+    const isProUser = Boolean(user.isPro);
+    const creditsUsed = user.creditsUsed || 0;
+    const maxCredits = user.maxFreeCredits || 2;
+    const hasRemainingCredits = creditsUsed < maxCredits;
+
+    // 2. Quota Guard: Free user with 0 remaining credits triggers Paywall modal
+    if (!isProUser && !hasRemainingCredits) {
       setIsPaywallOpen(true);
       return;
     }
 
-    // 2. Hybrid Key Validation Check for Free Tier:
-    // If user is on Free tier, has NOT entered their own API key, and did NOT check 'Offline Engine'
-    const customKey = getCustomApiKey();
-    if (!isPro && !forceOffline && (!customKey || customKey.trim() === '')) {
+    // 3. Hybrid API Key Validation Check for Free Tier:
+    const customKey = user.customApiKey;
+    if (!isProUser && !forceOffline && (!customKey || customKey.trim() === '')) {
       setKeyValidationPrompt(true);
       return;
     }
@@ -95,15 +87,13 @@ export default function HomePage() {
     setIsLoading(true);
 
     try {
-      const proToken = getProSessionToken();
-
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
 
-      if (isPro && proToken) {
-        headers['x-pro-token'] = proToken;
-        headers['authorization'] = `Bearer ${proToken}`;
+      if (isProUser && user.proToken) {
+        headers['x-pro-token'] = user.proToken;
+        headers['authorization'] = `Bearer ${user.proToken}`;
       } else if (customKey) {
         headers['x-client-api-key'] = customKey.trim();
       }
@@ -115,8 +105,8 @@ export default function HomePage() {
           text: inputText,
           documentType,
           forceOffline,
-          proToken: isPro ? proToken : undefined,
-          customApiKey: !isPro ? customKey : undefined,
+          proToken: isProUser ? user.proToken : undefined,
+          customApiKey: !isProUser ? customKey : undefined,
         }),
       });
 
@@ -133,9 +123,8 @@ export default function HomePage() {
       const parsedData: ParsedDocumentResult = data;
       setResult(parsedData);
 
-      // Record successful conversion
-      const updatedQuota = recordConversion();
-      setCreditsState(updatedQuota);
+      // Record conversion linked to user ID
+      recordConversion();
 
       // Smooth scroll to results
       setTimeout(() => {
@@ -178,14 +167,19 @@ export default function HomePage() {
     setKeyValidationPrompt(false);
   };
 
+  const handleContinueAsGuestAndParse = () => {
+    loginGuest();
+    setAuthPrompt(false);
+  };
+
   return (
     <div className="min-h-screen bg-[#fafafa] text-zinc-900 flex flex-col font-sans selection:bg-zinc-900 selection:text-white">
       {/* Top Header */}
       <Header
-        credits={creditsState}
+        user={user}
         onOpenUpgrade={() => setIsPaywallOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        hasCustomKey={hasCustomKey}
+        onLogout={logout}
       />
 
       {/* Main Single-Screen Workspace */}
@@ -226,6 +220,14 @@ export default function HomePage() {
             forceOffline={forceOffline}
             onToggleForceOffline={setForceOffline}
           />
+
+          {/* Authentication Prompt Guard */}
+          {authPrompt && (
+            <AuthPromptCard
+              onContinueAsGuest={handleContinueAsGuestAndParse}
+              onDismiss={() => setAuthPrompt(false)}
+            />
+          )}
 
           {/* Minimalist Validation Message when Free User needs Key / Offline / PRO */}
           {keyValidationPrompt && (
@@ -345,7 +347,9 @@ export default function HomePage() {
             <span>• Micro-SaaS for Solo Developers</span>
           </div>
           <div className="flex items-center gap-4 text-zinc-600">
-            <span>Client-side Privacy & UTF-8 BOM Compliant</span>
+            <span>
+              {user ? `Authenticated as ${user.email}` : 'Guest Session'}
+            </span>
             <span>•</span>
             <button
               onClick={() => setIsSettingsOpen(true)}
@@ -361,15 +365,12 @@ export default function HomePage() {
       <PaywallModal
         isOpen={isPaywallOpen}
         onClose={() => setIsPaywallOpen(false)}
-        onSuccessUnlock={refreshUserData}
       />
 
       {/* Settings / API Key Modal */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        onRefreshState={refreshUserData}
-        isPro={creditsState.isPro}
       />
     </div>
   );

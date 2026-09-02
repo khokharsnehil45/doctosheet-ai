@@ -12,12 +12,12 @@ import {
   Loader2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { unlockProTier } from '@/lib/quota';
+import { useAuth } from '@/lib/AuthContext';
 
 interface PaywallModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccessUnlock: () => void;
+  onSuccessUnlock?: () => void;
 }
 
 export const PaywallModal: React.FC<PaywallModalProps> = ({
@@ -25,6 +25,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   onClose,
   onSuccessUnlock,
 }) => {
+  const { user, unlockPro } = useAuth();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'lifetime'>('monthly');
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
@@ -66,18 +67,19 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
         body: JSON.stringify({
           planId: selectedPlan === 'monthly' ? 'monthly_pro' : 'lifetime_pro',
           promoCode: promoApplied ? promoCode : undefined,
+          userEmail: user?.email,
         }),
       });
 
       // Simulate payment delay
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Unlock Pro Tier
+      // Unlock Pro Tier for logged-in user
       const planName =
         selectedPlan === 'monthly'
           ? 'Pro Unlimited ($19/mo)'
           : 'Pro Lifetime ($99 one-time)';
-      unlockProTier(planName);
+      unlockPro(planName);
 
       // Trigger Confetti
       try {
@@ -91,7 +93,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
       }
 
       setIsProcessing(false);
-      onSuccessUnlock();
+      if (onSuccessUnlock) onSuccessUnlock();
       onClose();
     } catch (err: unknown) {
       setIsProcessing(false);
@@ -103,13 +105,13 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
   const handleActivateWithLicenseKey = () => {
     const key = licenseKeyInput.trim().toUpperCase();
     if (key === 'PRO-UNLIMITED-2025' || key.startsWith('PRO-')) {
-      unlockProTier('Pro Unlimited (License Key)');
+      unlockPro('Pro Unlimited (License Key)');
       try {
         confetti({ particleCount: 80, spread: 60 });
       } catch {
         // Ignore
       }
-      onSuccessUnlock();
+      if (onSuccessUnlock) onSuccessUnlock();
       onClose();
     } else {
       setErrorMsg('Invalid license key format. Use format "PRO-UNLIMITED-2025".');
@@ -130,7 +132,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 Unlock DocToSheet Pro
               </h2>
               <p className="text-xs text-zinc-600">
-                You&apos;ve utilized your 2 free document conversions.
+                {user ? `Account: ${user.email}` : '2 free conversions completed.'}
               </p>
             </div>
           </div>
@@ -218,7 +220,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
                   <Check className="w-2.5 h-2.5" />
                 </div>
-                <span>Gemini 1.5 Flash High-Speed AI Engine & Schema Validator</span>
+                <span>Managed Gemini 1.5 Flash High-Speed AI Engine</span>
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
@@ -230,7 +232,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 <div className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
                   <Check className="w-2.5 h-2.5" />
                 </div>
-                <span>Bring Your Own Key (BYOK) custom Gemini API token support</span>
+                <span>Persistent User Profile & Multiple Device Sync</span>
               </li>
             </ul>
           </div>

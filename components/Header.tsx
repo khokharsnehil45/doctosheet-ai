@@ -1,29 +1,42 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, FileSpreadsheet, KeyRound, Crown } from 'lucide-react';
-import { UserCreditsState } from '@/lib/types';
+import Link from 'next/link';
+import {
+  Sparkles,
+  FileSpreadsheet,
+  KeyRound,
+  Crown,
+  User as UserIcon,
+  LogOut,
+  LogIn,
+} from 'lucide-react';
+import { User } from '@/lib/auth';
 
 interface HeaderProps {
-  credits: UserCreditsState;
+  user: User | null;
   onOpenUpgrade: () => void;
   onOpenSettings: () => void;
-  hasCustomKey: boolean;
+  onLogout: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  credits,
+  user,
   onOpenUpgrade,
   onOpenSettings,
-  hasCustomKey,
+  onLogout,
 }) => {
-  const remaining = Math.max(0, credits.maxFreeCredits - credits.creditsUsed);
+  const isPro = Boolean(user?.isPro);
+  const remaining = user
+    ? Math.max(0, user.maxFreeCredits - (user.creditsUsed || 0))
+    : 2;
+  const hasCustomKey = Boolean(user?.customApiKey && user.customApiKey.trim().length > 0);
 
   return (
     <header className="w-full border-b border-zinc-200 bg-white sticky top-0 z-30">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Brand Logo & Name */}
-        <div className="flex items-center gap-3">
+        <Link href="/" className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-zinc-900 text-white flex items-center justify-center shadow-xs">
             <FileSpreadsheet className="w-5 h-5 text-zinc-100" />
           </div>
@@ -40,7 +53,7 @@ export const Header: React.FC<HeaderProps> = ({
               Convert unstructured financial & legal text into clean spreadsheets
             </p>
           </div>
-        </div>
+        </Link>
 
         {/* Right Action Tools */}
         <div className="flex items-center gap-2 sm:gap-3">
@@ -48,46 +61,76 @@ export const Header: React.FC<HeaderProps> = ({
           {hasCustomKey && (
             <button
               onClick={onOpenSettings}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-              title="Custom Gemini API Key is active"
+              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+              title="Personal Gemini API Key is linked to your account"
             >
               <KeyRound className="w-3.5 h-3.5" />
-              <span>BYOK Active</span>
+              <span>BYOK Linked</span>
             </button>
           )}
 
-          {/* Credits or Pro Pill */}
-          {credits.isPro ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium">
-              <Crown className="w-3.5 h-3.5 text-amber-600" />
-              <span>PRO Plan</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 text-xs font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-700 animate-pulse"></span>
-              <span>{remaining} / {credits.maxFreeCredits} Free Credits</span>
-            </div>
-          )}
+          {/* User Credits or Pro Pill */}
+          {user ? (
+            isPro ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium">
+                <Crown className="w-3.5 h-3.5 text-amber-600" />
+                <span>PRO Plan</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 text-xs font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-700 animate-pulse"></span>
+                <span>{remaining} / {user.maxFreeCredits} Free Credits</span>
+              </div>
+            )
+          ) : null}
 
           {/* Upgrade Button */}
-          {!credits.isPro ? (
+          {user && !isPro && (
             <button
               onClick={onOpenUpgrade}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-800 transition-all shadow-xs"
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium bg-zinc-900 text-white hover:bg-zinc-800 transition-all shadow-xs cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span>Upgrade ($19/mo)</span>
             </button>
-          ) : null}
+          )}
 
           {/* Settings Button */}
           <button
             onClick={onOpenSettings}
-            className="p-2 rounded-md text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 border border-transparent hover:border-zinc-200 transition-colors"
+            className="p-2 rounded-md text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 border border-transparent hover:border-zinc-200 transition-colors cursor-pointer"
             title="Settings & API Key"
           >
             <KeyRound className="w-4 h-4" />
           </button>
+
+          {/* User Profile & Logout or Login */}
+          {user ? (
+            <div className="flex items-center gap-1.5 pl-1 border-l border-zinc-200">
+              <div
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 text-zinc-800 text-xs font-medium max-w-[130px] sm:max-w-[160px] truncate"
+                title={`Logged in as ${user.email}`}
+              >
+                <UserIcon className="w-3.5 h-3.5 text-zinc-500 flex-shrink-0" />
+                <span className="truncate">{user.name || user.email.split('@')[0]}</span>
+              </div>
+              <button
+                onClick={onLogout}
+                className="p-1.5 text-zinc-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                title="Sign out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/login"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-zinc-900 text-white hover:bg-zinc-800 transition-all cursor-pointer"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </Link>
+          )}
         </div>
       </div>
     </header>

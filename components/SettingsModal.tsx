@@ -9,67 +9,54 @@ import {
   Crown,
   Trash2,
   ShieldCheck,
+  User as UserIcon,
 } from 'lucide-react';
-import {
-  getCustomApiKey,
-  setCustomApiKey,
-  resetQuotaForTesting,
-  unlockProTier,
-  getUserQuota,
-} from '@/lib/quota';
+import { useAuth } from '@/lib/AuthContext';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onRefreshState: () => void;
+  onRefreshState?: () => void;
   isPro?: boolean;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
-  onRefreshState,
-  isPro = false,
 }) => {
+  const { user, saveApiKey, unlockPro, resetCredits } = useAuth();
   const [apiKey, setApiKey] = useState('');
   const [saved, setSaved] = useState(false);
-  const [currentIsPro, setCurrentIsPro] = useState(isPro);
 
   useEffect(() => {
     if (isOpen) {
-      setApiKey(getCustomApiKey());
+      setApiKey(user?.customApiKey || '');
       setSaved(false);
-      const quota = getUserQuota();
-      setCurrentIsPro(quota.isPro);
     }
-  }, [isOpen, isPro]);
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
 
   const handleSaveApiKey = () => {
-    setCustomApiKey(apiKey);
+    saveApiKey(apiKey);
     setSaved(true);
-    onRefreshState();
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleClearApiKey = () => {
     setApiKey('');
-    setCustomApiKey('');
-    onRefreshState();
+    saveApiKey('');
   };
 
   const handleResetCredits = () => {
-    resetQuotaForTesting();
-    setCurrentIsPro(false);
-    onRefreshState();
+    resetCredits();
   };
 
   const handleForcePro = () => {
-    unlockProTier('Pro Unlimited (Dev Override)');
-    setCurrentIsPro(true);
-    onRefreshState();
+    unlockPro('Pro Unlimited (Dev Override)');
   };
+
+  const isProUser = Boolean(user?.isPro);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -83,7 +70,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div>
               <h2 className="text-sm font-bold text-zinc-900">Developer Settings & API Key</h2>
               <p className="text-[11px] text-zinc-600">
-                Hybrid API configuration & local storage controls
+                {user ? `Linked to ${user.email}` : 'Hybrid API key management'}
               </p>
             </div>
           </div>
@@ -97,8 +84,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Content */}
         <div className="p-5 space-y-4">
+          {/* User Profile Badge */}
+          {user && (
+            <div className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-50 border border-zinc-200 text-xs">
+              <div className="flex items-center gap-2">
+                <UserIcon className="w-3.5 h-3.5 text-zinc-500" />
+                <span className="font-semibold text-zinc-800">{user.email}</span>
+              </div>
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-zinc-200 text-zinc-700">
+                ID: {user.id.substring(0, 10)}...
+              </span>
+            </div>
+          )}
+
           {/* Hybrid API Key Management */}
-          {currentIsPro ? (
+          {isProUser ? (
             /* PRO User View: Hide manual key input, show Managed Badge */
             <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/80 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -128,7 +128,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-zinc-600">
-                Save your personal Gemini Flash key to your browser&apos;s <code className="bg-zinc-100 px-1 py-0.5 rounded text-zinc-800">localStorage</code>. Free users without a key can use the Offline Engine or upgrade to PRO.
+                Save your personal Gemini Flash key linked securely to your account ID. Free users without a key can use the Offline Engine or upgrade to PRO.
               </p>
               <div className="flex gap-2">
                 <input
@@ -161,7 +161,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       <span>Key Saved!</span>
                     </>
                   ) : (
-                    <span>Save Key to LocalStorage</span>
+                    <span>Save Key to Profile</span>
                   )}
                 </button>
               </div>
@@ -180,7 +180,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="p-2.5 text-xs font-medium text-zinc-700 bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 rounded-lg flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <RefreshCw className="w-3.5 h-3.5 text-zinc-600" />
-                <span>Reset to Free Tier</span>
+                <span>Reset User Credits</span>
               </button>
               <button
                 type="button"

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AuthProvider } from '@/lib/AuthContext';
 
 export const metadata: Metadata = {
   title: 'DocToSheet AI - Turn Unstructured Documents into Clean Spreadsheets',
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full bg-[#fafafa]">
       <body className="min-h-full font-sans antialiased text-zinc-900 bg-[#fafafa]">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
