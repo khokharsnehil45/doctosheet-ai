@@ -10,6 +10,7 @@ import {
   Image as ImageIcon,
   Loader2,
   X,
+  FolderOpen,
 } from 'lucide-react';
 import { DocumentType, FileAttachment } from '@/lib/types';
 import { SAMPLE_DOCUMENTS } from '@/lib/samples';
@@ -65,11 +66,22 @@ export const InputZone: React.FC<InputZoneProps> = ({
     if (e.target.files && e.target.files.length > 0) {
       processFile(e.target.files[0]);
     }
+    // Reset file input value so user can re-select the same file if desired
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerFilePicker = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
   };
 
   const processFile = (file: File) => {
-    const isPDF = file.type === 'application/pdf' || file.name.endsWith('.pdf');
-    const isImage = file.type.startsWith('image/');
+    const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|tiff)$/i.test(file.name);
 
     const reader = new FileReader();
 
@@ -87,7 +99,7 @@ export const InputZone: React.FC<InputZoneProps> = ({
       };
       reader.readAsDataURL(file);
     } else {
-      // Text file
+      // Text file (.txt, .csv, .log, .md)
       reader.onload = (event) => {
         const content = event.target?.result;
         if (typeof content === 'string') {
@@ -167,13 +179,14 @@ export const InputZone: React.FC<InputZoneProps> = ({
 
       {/* Drop Zone & Input Grid */}
       <div className="space-y-4">
-        {/* Hidden File Input */}
+        {/* Real Hidden File Input */}
         <input
           type="file"
+          id="doctosheet-file-input"
           ref={fileInputRef}
           onChange={handleFileInput}
-          accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.csv,.log,.md,.tsv"
-          className="hidden"
+          accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.csv,.log,.md,.tsv,application/pdf,image/*"
+          className="sr-only"
         />
 
         {/* File Attachment Card if file loaded */}
@@ -223,8 +236,16 @@ export const InputZone: React.FC<InputZoneProps> = ({
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`w-full py-5 px-4 rounded-xl border border-dashed transition-all flex items-center justify-between cursor-pointer ${
+            onClick={() => triggerFilePicker()}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                triggerFilePicker();
+              }
+            }}
+            className={`w-full py-5 px-4 rounded-xl border border-dashed transition-all flex items-center justify-between cursor-pointer select-none ${
               isDragging
                 ? 'border-zinc-900 bg-zinc-50 dark:border-zinc-100 dark:bg-zinc-800/80'
                 : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 bg-zinc-50/50 dark:bg-zinc-950/40'
@@ -243,9 +264,14 @@ export const InputZone: React.FC<InputZoneProps> = ({
                 </p>
               </div>
             </div>
-            <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium px-3 py-1.5 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 hidden sm:inline-block">
-              Browse files
-            </span>
+            <button
+              type="button"
+              onClick={(e) => triggerFilePicker(e)}
+              className="text-xs text-zinc-700 dark:text-zinc-200 font-medium px-3.5 py-1.5 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 rounded-lg border border-zinc-200 dark:border-zinc-700 shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <FolderOpen className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+              <span>Browse files</span>
+            </button>
           </div>
         )}
 
