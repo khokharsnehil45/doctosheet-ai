@@ -62,36 +62,36 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
   };
 
   return (
-    <div className="w-full bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs transition-colors">
+    <div className="w-full bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 shadow-xs transition-colors">
       {/* Title & summary information */}
       <div>
         <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-          <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          {title || 'Extracted Sheet'}
+          <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+          <span className="truncate">{title || 'Extracted Sheet'}</span>
         </h3>
-        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-          {rows.length} rows parsed and structured • Ready for immediate export
+        <p className="text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+          {rows.length} rows structured • Ready for export
         </p>
       </div>
 
-      {/* Export Action Buttons */}
-      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+      {/* Export Action Buttons Grid on Mobile */}
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
         {/* Copy for Sheets / Excel */}
         <button
           type="button"
           onClick={handleCopyTSV}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
           title="Copy tab-delimited values for instant paste into Google Sheets or MS Excel"
         >
           {copied ? (
             <>
               <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-emerald-700 dark:text-emerald-400 font-semibold">Copied to Clipboard!</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-semibold">Copied!</span>
             </>
           ) : (
             <>
               <Copy className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
-              <span>Copy for Sheets</span>
+              <span>Copy TSV</span>
             </>
           )}
         </button>
@@ -100,7 +100,7 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
         <button
           type="button"
           onClick={handleDownloadJSON}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
           title="Download JSON format"
         >
           <FileCode className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
@@ -111,34 +111,35 @@ export const ExportToolbar: React.FC<ExportToolbarProps> = ({
         <button
           type="button"
           onClick={handleDownloadExcel}
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
+          className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
           title="Download formatted Microsoft Excel spreadsheet file"
         >
           <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span>Download .XLS</span>
+          <span>Excel .XLS</span>
         </button>
 
         {/* Download CSV (Primary CTA) */}
         <button
           type="button"
           onClick={handleDownloadCSV}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 text-white transition-all shadow-xs cursor-pointer"
+          className="flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 text-white transition-all shadow-xs cursor-pointer"
           title="Download RFC 4180 standard CSV file"
         >
           <Download className="w-3.5 h-3.5 text-zinc-100 dark:text-zinc-950" />
           <span>Download .CSV</span>
         </button>
-
-        {/* Parse another document */}
-        <button
-          type="button"
-          onClick={onReset}
-          className="p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
-          title="Parse another document"
-        >
-          <RotateCcw className="w-4 h-4" />
-        </button>
       </div>
+
+      {/* Parse another button */}
+      <button
+        type="button"
+        onClick={onReset}
+        className="w-full sm:w-auto py-2 sm:p-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer flex items-center justify-center gap-1 text-xs"
+        title="Parse another document"
+      >
+        <RotateCcw className="w-4 h-4" />
+        <span className="sm:hidden">Reset & New Doc</span>
+      </button>
     </div>
   );
 };
