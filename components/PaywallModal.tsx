@@ -55,33 +55,43 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
     return Math.round(base * (1 - discountAmount / 100));
   };
 
-  const handleSimulatePayment = async () => {
+  const handleCheckout = async () => {
     setIsProcessing(true);
     setErrorMsg('');
 
     try {
-      // Call mock Stripe checkout endpoint
-      await fetch('/api/checkout', {
+      const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           planId: selectedPlan === 'monthly' ? 'monthly_pro' : 'lifetime_pro',
           promoCode: promoApplied ? promoCode : undefined,
           userEmail: user?.email,
+          userId: user?.id,
         }),
       });
 
-      // Simulate payment delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const data = await res.json();
 
-      // Unlock Pro Tier for logged-in user
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to initialize checkout');
+      }
+
+      // If live hosted checkout URL exists (Stripe / LemonSqueezy)
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+
+      // Sandbox / Test Mode Activation
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
       const planName =
         selectedPlan === 'monthly'
           ? 'Pro Unlimited ($19/mo)'
           : 'Pro Lifetime ($99 one-time)';
       unlockPro(planName);
 
-      // Trigger Confetti
       try {
         confetti({
           particleCount: 100,
@@ -97,7 +107,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
       onClose();
     } catch (err: unknown) {
       setIsProcessing(false);
-      const message = err instanceof Error ? err.message : 'Payment simulation failed.';
+      const message = err instanceof Error ? err.message : 'Checkout failed.';
       setErrorMsg(message);
     }
   };
@@ -220,7 +230,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
                   <Check className="w-2.5 h-2.5" />
                 </div>
-                <span>Managed Gemini 1.5 Flash High-Speed AI Engine</span>
+                <span>Managed Gemini 1.5 Flash Vision OCR Engine</span>
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
@@ -232,7 +242,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
                 <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
                   <Check className="w-2.5 h-2.5" />
                 </div>
-                <span>Persistent User Profile & Multiple Device Sync</span>
+                <span>Cloud Database Synchronization & Unlimited History</span>
               </li>
             </ul>
           </div>
@@ -271,14 +281,14 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
           {/* Checkout CTA */}
           <button
             type="button"
-            onClick={handleSimulatePayment}
+            onClick={handleCheckout}
             disabled={isProcessing}
             className="w-full py-3 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 text-white font-semibold text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
             {isProcessing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-zinc-300 dark:text-zinc-700" />
-                <span>Authorizing Stripe Checkout...</span>
+                <span>Redirecting to Checkout...</span>
               </>
             ) : (
               <>
@@ -320,7 +330,7 @@ export const PaywallModal: React.FC<PaywallModalProps> = ({
         {/* Security badge footer */}
         <div className="px-6 py-3 bg-zinc-50 dark:bg-zinc-950/50 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span>Encrypted 256-bit Stripe checkout simulation • 30-day money-back guarantee</span>
+          <span>Encrypted 256-bit checkout • 30-day money-back guarantee</span>
         </div>
       </div>
     </div>

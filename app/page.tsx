@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { DocumentTypeSelector } from '@/components/DocumentTypeSelector';
 import { InputZone } from '@/components/InputZone';
@@ -10,12 +10,14 @@ import { ExportToolbar } from '@/components/ExportToolbar';
 import { PaywallModal } from '@/components/PaywallModal';
 import { SettingsModal } from '@/components/SettingsModal';
 import { AuthPromptCard } from '@/components/AuthPromptCard';
+import { HistoryDrawer } from '@/components/HistoryDrawer';
 import {
   DocumentType,
   ParsedDocumentResult,
   TableRow,
   FileAttachment,
 } from '@/lib/types';
+import { SavedConversionItem } from '@/lib/db';
 import { SAMPLE_DOCUMENTS } from '@/lib/samples';
 import { useAuth } from '@/lib/AuthContext';
 import {
@@ -41,14 +43,43 @@ export default function HomePage() {
   const [keyValidationPrompt, setKeyValidationPrompt] = useState<boolean>(false);
   const [authPrompt, setAuthPrompt] = useState<boolean>(false);
 
-  // Modals state
+  // Modals & Drawer state
   const [isPaywallOpen, setIsPaywallOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
+
+  // Cloud Database Conversions History
+  const [savedConversions, setSavedConversions] = useState<SavedConversionItem[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(false);
+
+  const fetchHistory = useCallback(async () => {
+    if (!user) return;
+    setIsHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/conversions?userId=${encodeURIComponent(user.id)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSavedConversions(data.conversions || []);
+      }
+    } catch (err) {
+      console.warn('Failed to load history:', err);
+    } finally {
+      setIsHistoryLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     // Default load bank statement sample for convenience
     setInputText(SAMPLE_DOCUMENTS['bank_statement'].rawText);
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchHistory();
+    } else {
+      setSavedConversions([]);
+    }
+  }, [user, fetchHistory]);
 
   const handleDocumentTypeChange = (type: DocumentType) => {
     setDocumentType(type);
@@ -129,6 +160,29 @@ export default function HomePage() {
       // Record conversion linked to user ID
       recordConversion();
 
+      // Automatically sync to Supabase Database
+      try {
+        await fetch('/api/conversions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            title: parsedData.title,
+            documentType: parsedData.documentType,
+            fileName: fileAttachment?.name || null,
+            rowsCount: parsedData.rows.length,
+            totalAmount: parsedData.metadata.totalAmount,
+            columns: parsedData.columns,
+            rows: parsedData.rows,
+            engine: parsedData.metadata.engine,
+            processingTimeMs: parsedData.metadata.processingTimeMs,
+          }),
+        });
+        fetchHistory();
+      } catch (saveErr) {
+        console.warn('Failed to save to database history:', saveErr);
+      }
+
       // Smooth scroll to results
       setTimeout(() => {
         const resultsEl = document.getElementById('results-section');
@@ -176,11 +230,34 @@ export default function HomePage() {
     setAuthPrompt(false);
   };
 
+  const handleDeleteHistoryItem = async (id: string) => {
+    if (!user) return;
+    try {
+      await fetch(`/api/conversions/${id}?userId=${encodeURIComponent(user.id)}`, {
+        method: 'DELETE',
+      });
+      setSavedConversions((prev) => prev.filter((c) => c.id !== id));
+    } catch (err) {
+      console.warn('Failed to delete history item:', err);
+    }
+  };
+
+  const handleLoadFromHistory = (historicalResult: ParsedDocumentResult) => {
+    setResult(historicalResult);
+    setDocumentType(historicalResult.documentType);
+    setTimeout(() => {
+      const el = document.getElementById('results-section');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
   return (
     <div className="min-h-screen bg-[#fafafa] dark:bg-[#09090b] text-zinc-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-zinc-900 selection:text-white dark:selection:bg-zinc-100 dark:selection:text-zinc-950 transition-colors duration-200">
       {/* Top Header */}
       <Header
         user={user}
+        historyCount={savedConversions.length}
+        onOpenHistory={() => setIsHistoryOpen(true)}
         onOpenUpgrade={() => setIsPaywallOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onLogout={logout}
@@ -366,6 +443,16 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* History / Saved Spreadsheets Drawer */}
+      <HistoryDrawer
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        conversions={savedConversions}
+        onLoadConversion={handleLoadFromHistory}
+        onDeleteConversion={handleDeleteHistoryItem}
+        isLoading={isHistoryLoading}
+      />
 
       {/* Paywall / Pro Upgrade Modal */}
       <PaywallModal

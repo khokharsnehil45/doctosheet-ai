@@ -4,9 +4,34 @@ import { AuthProvider } from '@/lib/AuthContext';
 import { ThemeProvider, themeScript } from '@/lib/ThemeContext';
 
 export const metadata: Metadata = {
-  title: 'DocToSheet AI - Turn Unstructured Documents into Clean Spreadsheets',
+  metadataBase: new URL('https://doctosheet.ai'),
+  title: 'DocToSheet AI - Turn Bank Statements, Invoices & PDFs into Clean Spreadsheets',
   description:
-    'Production-ready AI micro-SaaS to extract and structure bank statements, invoices, and legal lease agreements into clean CSV and Excel spreadsheets.',
+    'Production-grade AI micro-SaaS to extract and structure bank statements, invoices, receipts, and legal leases into clean CSV and Excel downloads in seconds.',
+  keywords: [
+    'bank statement to csv',
+    'convert invoice to excel',
+    'pdf to sheet converter',
+    'ocr bank statement',
+    'extract table from pdf',
+    'financial document ai extractor',
+    'lease abstract spreadsheet',
+  ],
+  authors: [{ name: 'DocToSheet Team' }],
+  openGraph: {
+    title: 'DocToSheet AI - Instant Document to CSV & Excel Generator',
+    description:
+      'Extract unstructured bank statements, invoices, and PDFs into clean tabular spreadsheets in 1 click.',
+    url: 'https://doctosheet.ai',
+    siteName: 'DocToSheet AI',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'DocToSheet AI - Instant Document to Excel & CSV Generator',
+    description:
+      'Convert financial PDFs, bank statements, and invoices into structured spreadsheets with AI OCR.',
+  },
 };
 
 export default function RootLayout({

@@ -10,12 +10,15 @@ import {
   User as UserIcon,
   LogOut,
   LogIn,
+  History,
 } from 'lucide-react';
 import { User } from '@/lib/auth';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface HeaderProps {
   user: User | null;
+  historyCount?: number;
+  onOpenHistory: () => void;
   onOpenUpgrade: () => void;
   onOpenSettings: () => void;
   onLogout: () => void;
@@ -23,6 +26,8 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   user,
+  historyCount = 0,
+  onOpenHistory,
   onOpenUpgrade,
   onOpenSettings,
   onLogout,
@@ -57,33 +62,49 @@ export const Header: React.FC<HeaderProps> = ({
         </Link>
 
         {/* Right Action Tools */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           {/* Theme Switcher Toggle */}
           <ThemeToggle />
+
+          {/* History / Saved Spreadsheets Button */}
+          <button
+            type="button"
+            onClick={onOpenHistory}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 transition-colors cursor-pointer"
+            title="View saved spreadsheets in Supabase database"
+          >
+            <History className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" />
+            <span className="hidden sm:inline">Spreadsheets</span>
+            {historyCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 text-[10px] font-bold">
+                {historyCount}
+              </span>
+            )}
+          </button>
 
           {/* Custom API Key Badge if set */}
           {hasCustomKey && (
             <button
               onClick={onOpenSettings}
-              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer"
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer"
               title="Personal Gemini API Key is linked to your account"
             >
               <KeyRound className="w-3.5 h-3.5" />
-              <span>BYOK Linked</span>
+              <span>BYOK</span>
             </button>
           )}
 
           {/* User Credits or Pro Pill */}
           {user ? (
             isPro ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-300 text-xs font-medium">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-300 text-xs font-medium">
                 <Crown className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                <span>PRO Plan</span>
+                <span>PRO</span>
               </div>
             ) : (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-medium">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-medium">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>{remaining} / {user.maxFreeCredits} Free Credits</span>
+                <span>{remaining} / {user.maxFreeCredits}</span>
               </div>
             )
           ) : null}
@@ -92,17 +113,17 @@ export const Header: React.FC<HeaderProps> = ({
           {user && !isPro && (
             <button
               onClick={onOpenUpgrade}
-              className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 text-white transition-all shadow-xs cursor-pointer"
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 text-white transition-all shadow-xs cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400 dark:text-amber-600" />
-              <span>Upgrade ($19/mo)</span>
+              <span>Upgrade</span>
             </button>
           )}
 
           {/* Settings Button */}
           <button
             onClick={onOpenSettings}
-            className="p-2 rounded-md text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 transition-colors cursor-pointer"
+            className="p-1.5 rounded-md text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700 transition-colors cursor-pointer"
             title="Settings & API Key"
           >
             <KeyRound className="w-4 h-4" />
@@ -110,9 +131,9 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* User Profile & Logout or Login */}
           {user ? (
-            <div className="flex items-center gap-1.5 pl-1 border-l border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center gap-1 pl-1 border-l border-zinc-200 dark:border-zinc-800">
               <div
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-medium max-w-[130px] sm:max-w-[160px] truncate"
+                className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-medium max-w-[110px] sm:max-w-[140px] truncate"
                 title={`Logged in as ${user.email}`}
               >
                 <UserIcon className="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400 flex-shrink-0" />
