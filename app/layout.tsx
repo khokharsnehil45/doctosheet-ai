@@ -40,11 +40,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="h-full">
+    <html lang="en" suppressHydrationWarning className="h-full overflow-x-hidden">
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-full font-sans antialiased text-zinc-900 bg-[#fafafa] dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-200">
+      <body className="min-h-full font-sans antialiased text-zinc-900 bg-[#fafafa] dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-200 overflow-x-hidden w-full max-w-[100vw]">
         <ThemeProvider>
           <AuthProvider>{children}</AuthProvider>
         </ThemeProvider>
