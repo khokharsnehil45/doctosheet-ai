@@ -1,18 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseDocumentWithGemini } from '@/lib/gemini';
 import { parseOfflineDocument } from '@/lib/fallbackParser';
-import { DocumentType } from '@/lib/types';
+import { DocumentType, FileAttachment } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
+
+async function extractTextFromPdfBuffer(buffer: Buffer): Promise<string> {
+  try {
+    const pdfModule = await import('pdf-parse');
+    const parseFn = typeof pdfModule === 'function' ? pdfModule : (pdfModule as unknown as { default: (b: Buffer) => Promise<{ text: string }> }).default;
+    if (typeof parseFn === 'function') {
+      const data = await parseFn(buffer);
+      return data.text || '';
+    }
+    return '';
+  } catch (err) {
+    console.warn('[DocToSheet AI] PDF text extraction fallback:', err);
+    return '';
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { text, documentType, forceOffline } = body;
+    const { text, fileAttachment, documentType, forceOffline } = body;
 
-    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    const hasText = typeof text === 'string' && text.trim().length > 0;
+    const hasFile = Boolean(fileAttachment && fileAttachment.base64);
+
+    if (!hasText && !hasFile) {
       return NextResponse.json(
-        { error: 'Document text is required.' },
+        { error: 'Document text or a PDF/image file is required.' },
         { status: 400 }
       );
     }
@@ -22,9 +40,19 @@ export async function POST(req: NextRequest) {
       ? documentType
       : 'bank_statement';
 
-    // 1. Force Offline Mode
+    // 1. Force Offline Mode or Offline PDF text extraction
     if (forceOffline) {
-      const offlineResult = parseOfflineDocument(text, docType);
+      let offlineText = text || '';
+
+      // If PDF file provided in offline mode, extract plain text using pdf-parse
+      if (hasFile && fileAttachment.mimeType === 'application/pdf') {
+        const cleanBase64 = fileAttachment.base64.replace(/^data:[^;]+;base64,/, '');
+        const buffer = Buffer.from(cleanBase64, 'base64');
+        const extracted = await extractTextFromPdfBuffer(buffer);
+        if (extracted) offlineText = extracted;
+      }
+
+      const offlineResult = parseOfflineDocument(offlineText || 'Document Content', docType);
       return NextResponse.json(offlineResult);
     }
 
@@ -43,7 +71,14 @@ export async function POST(req: NextRequest) {
       const serverKey = process.env.GEMINI_API_KEY;
       if (!serverKey) {
         console.log('[DocToSheet AI] PRO User Request - Server GEMINI_API_KEY not configured, using offline fallback');
-        const fallback = parseOfflineDocument(text, docType);
+        let offlineText = text || '';
+        if (hasFile && fileAttachment.mimeType === 'application/pdf') {
+          const cleanBase64 = fileAttachment.base64.replace(/^data:[^;]+;base64,/, '');
+          const buffer = Buffer.from(cleanBase64, 'base64');
+          const extracted = await extractTextFromPdfBuffer(buffer);
+          if (extracted) offlineText = extracted;
+        }
+        const fallback = parseOfflineDocument(offlineText || 'Document Content', docType);
         return NextResponse.json({
           ...fallback,
           metadata: {
@@ -53,7 +88,13 @@ export async function POST(req: NextRequest) {
         });
       }
 
-      const proResult = await parseDocumentWithGemini(text, docType, serverKey);
+      const proResult = await parseDocumentWithGemini(
+        text || '',
+        docType,
+        serverKey,
+        fileAttachment as FileAttachment | undefined
+      );
+
       return NextResponse.json({
         ...proResult,
         metadata: {
@@ -77,9 +118,10 @@ export async function POST(req: NextRequest) {
 
     // Process with Free User's client-supplied API key
     const clientResult = await parseDocumentWithGemini(
-      text,
+      text || '',
       docType,
-      clientApiKeyHeader.trim()
+      clientApiKeyHeader.trim(),
+      fileAttachment as FileAttachment | undefined
     );
 
     return NextResponse.json({
@@ -90,7 +132,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to parse document text.';
+    const message = error instanceof Error ? error.message : 'Failed to parse document.';
     console.error('Error in generation endpoint:', message);
     return NextResponse.json({ error: message }, { status: 500 });
   }

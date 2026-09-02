@@ -1,9 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { DocumentType, ParsedDocumentResult } from './types';
+import { DocumentType, ParsedDocumentResult, FileAttachment } from './types';
 import { parseOfflineDocument } from './fallbackParser';
 
 const SYSTEM_INSTRUCTIONS: Record<DocumentType, string> = {
-  bank_statement: `You are an expert financial data extraction engine. Analyze the provided bank statement raw text and extract every single transaction row accurately.
+  bank_statement: `You are an expert financial OCR and data extraction engine. Analyze the provided bank statement (raw text, PDF document, or scanned image) and extract every single transaction row accurately.
 Format the output STRICTLY as a JSON object matching this schema:
 {
   "title": "Bank Statement Transactions",
@@ -30,7 +30,7 @@ Format the output STRICTLY as a JSON object matching this schema:
   ]
 }`,
 
-  invoice: `You are an expert invoice and accounting parsing engine. Extract all itemized line items, deliverables, products, services, taxes, and totals from the provided text.
+  invoice: `You are an expert invoice, receipt, and accounting OCR parsing engine. Extract all itemized line items, deliverables, products, services, taxes, and totals from the provided text, PDF, or image.
 Format the output STRICTLY as a JSON object matching this schema:
 {
   "title": "Itemized Invoice Breakdown",
@@ -57,7 +57,7 @@ Format the output STRICTLY as a JSON object matching this schema:
   ]
 }`,
 
-  lease_summary: `You are a real estate legal analyst. Extract every key clause, obligation, financial term, date, penalty, renewal option, and section reference from the lease text.
+  lease_summary: `You are a real estate legal analyst and lease abstract OCR engine. Extract every key clause, obligation, financial term, date, penalty, renewal option, and section reference from the lease text, PDF, or scanned agreement.
 Format the output STRICTLY as a JSON object matching this schema:
 {
   "title": "Lease Agreement Abstract & Summary",
@@ -84,13 +84,14 @@ Format the output STRICTLY as a JSON object matching this schema:
 export async function parseDocumentWithGemini(
   text: string,
   documentType: DocumentType,
-  customApiKey?: string
+  customApiKey?: string,
+  fileAttachment?: FileAttachment
 ): Promise<ParsedDocumentResult> {
   const apiKey = customApiKey || process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
     console.log('[DocToSheet AI] No Gemini API key provided. Using deterministic offline fallback parser.');
-    return parseOfflineDocument(text, documentType);
+    return parseOfflineDocument(text || 'Uploaded Document', documentType);
   }
 
   const startTime = Date.now();
@@ -105,9 +106,30 @@ export async function parseDocumentWithGemini(
       },
     });
 
-    const prompt = `${SYSTEM_INSTRUCTIONS[documentType]}\n\nRAW DOCUMENT TEXT TO CONVERT:\n"""\n${text}\n"""\n\nReturn ONLY the valid JSON matching the schema.`;
+    const basePrompt = SYSTEM_INSTRUCTIONS[documentType];
+    const contents: Array<string | { inlineData: { mimeType: string; data: string } }> = [];
 
-    const result = await model.generateContent(prompt);
+    if (fileAttachment && fileAttachment.base64) {
+      const cleanBase64 = fileAttachment.base64.replace(/^data:[^;]+;base64,/, '');
+      contents.push(
+        `${basePrompt}\n\nAnalyze this attached document file (${fileAttachment.name}) and extract all tabular data into the requested JSON schema.`
+      );
+      contents.push({
+        inlineData: {
+          mimeType: fileAttachment.mimeType,
+          data: cleanBase64,
+        },
+      });
+      if (text && text.trim().length > 0) {
+        contents.push(`Additional contextual text provided by user:\n"""\n${text}\n"""`);
+      }
+    } else {
+      contents.push(
+        `${basePrompt}\n\nRAW DOCUMENT TEXT TO CONVERT:\n"""\n${text}\n"""\n\nReturn ONLY the valid JSON matching the schema.`
+      );
+    }
+
+    const result = await model.generateContent(contents);
     const responseText = result.response.text();
     const parsedJson = JSON.parse(responseText);
 
@@ -116,7 +138,7 @@ export async function parseDocumentWithGemini(
     return {
       documentType,
       title: parsedJson.title || `${documentType.replace('_', ' ').toUpperCase()} Sheet`,
-      summary: parsedJson.summary || '',
+      summary: parsedJson.summary || (fileAttachment ? `Extracted from ${fileAttachment.name}` : ''),
       columns: parsedJson.columns && Array.isArray(parsedJson.columns) ? parsedJson.columns : [],
       rows: parsedJson.rows && Array.isArray(parsedJson.rows) ? parsedJson.rows : [],
       metadata: {
@@ -131,7 +153,7 @@ export async function parseDocumentWithGemini(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown Gemini error';
     console.warn('[DocToSheet AI] Gemini API error, failing over to deterministic parser:', message);
-    const fallbackResult = parseOfflineDocument(text, documentType);
+    const fallbackResult = parseOfflineDocument(text || 'Document File', documentType);
     return {
       ...fallbackResult,
       summary: `${fallbackResult.summary} (Processed via deterministic offline engine)`

@@ -8,6 +8,13 @@ export interface ColumnDefinition {
 
 export type TableRow = Record<string, string | number | null>;
 
+export interface FileAttachment {
+  base64: string;
+  mimeType: string;
+  name: string;
+  sizeBytes?: number;
+}
+
 export interface ParsedDocumentResult {
   documentType: DocumentType;
   title: string;
@@ -25,9 +32,11 @@ export interface ParsedDocumentResult {
 }
 
 export interface ParseRequestPayload {
-  text: string;
+  text?: string;
+  fileAttachment?: FileAttachment;
   documentType: DocumentType;
   customApiKey?: string;
+  forceOffline?: boolean;
 }
 
 export interface UserCreditsState {

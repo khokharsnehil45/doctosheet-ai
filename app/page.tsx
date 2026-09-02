@@ -14,6 +14,7 @@ import {
   DocumentType,
   ParsedDocumentResult,
   TableRow,
+  FileAttachment,
 } from '@/lib/types';
 import { SAMPLE_DOCUMENTS } from '@/lib/samples';
 import { useAuth } from '@/lib/AuthContext';
@@ -32,6 +33,7 @@ export default function HomePage() {
 
   const [documentType, setDocumentType] = useState<DocumentType>('bank_statement');
   const [inputText, setInputText] = useState<string>('');
+  const [fileAttachment, setFileAttachment] = useState<FileAttachment | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [forceOffline, setForceOffline] = useState<boolean>(false);
   const [result, setResult] = useState<ParsedDocumentResult | null>(null);
@@ -103,6 +105,7 @@ export default function HomePage() {
         headers,
         body: JSON.stringify({
           text: inputText,
+          fileAttachment,
           documentType,
           forceOffline,
           proToken: isProUser ? user.proToken : undefined,
@@ -159,6 +162,7 @@ export default function HomePage() {
 
   const handleReset = () => {
     setResult(null);
+    setFileAttachment(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -188,13 +192,13 @@ export default function HomePage() {
         <section className="text-center max-w-2xl mx-auto space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium">
             <Zap className="w-3.5 h-3.5 text-zinc-900 dark:text-zinc-100" />
-            <span>Instant Document Text to CSV / Excel Generator</span>
+            <span>PDF, Scanned Image & Text to CSV / Excel Generator</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">
-            Structure Any Document Text in Seconds
+            Structure Any Document in Seconds
           </h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Paste unstructured bank statements, invoices, or lease agreements. Our hybrid AI & offline engine extracts
+            Upload PDF bank statements, image receipts, invoices, or legal contracts. Our AI OCR extracts
             precise rows and columns for 1-click spreadsheet download.
           </p>
         </section>
@@ -208,11 +212,13 @@ export default function HomePage() {
           />
         </section>
 
-        {/* Input Zone (Drop, Paste, Sample) */}
+        {/* Input Zone (PDF, Image Drop, Paste, Sample) */}
         <section className="max-w-4xl mx-auto space-y-4">
           <InputZone
             text={inputText}
             onChangeText={setInputText}
+            fileAttachment={fileAttachment}
+            onSelectFileAttachment={setFileAttachment}
             documentType={documentType}
             onSelectDocumentType={handleDocumentTypeChange}
             onParse={handleParse}
@@ -242,7 +248,7 @@ export default function HomePage() {
                       API Key Required on Free Tier
                     </h4>
                     <p className="text-xs text-zinc-300 leading-relaxed max-w-2xl">
-                      Free users must provide their personal Gemini API key in Settings, use the 100% Offline Engine, or upgrade to PRO to use our managed high-speed AI infrastructure.
+                      Free users must provide their personal Gemini API key in Settings, use the 100% Offline Engine, or upgrade to PRO to use our managed high-speed AI OCR infrastructure.
                     </p>
 
                     {/* Action buttons */}

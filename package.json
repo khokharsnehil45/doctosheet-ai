@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "node tests/verify-parsers.test.js && node tests/run-all-tests.js && node tests/test-hybrid-auth.test.js && node tests/test-auth-relational.test.js && node tests/test-dark-mode.test.js"
+    "test": "node tests/verify-parsers.test.js && node tests/run-all-tests.js && node tests/test-hybrid-auth.test.js && node tests/test-auth-relational.test.js && node tests/test-dark-mode.test.js && node tests/test-pdf-image-upload.test.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -15,6 +15,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.39.0",
     "next": "14.2.35",
+    "pdf-parse": "^1.1.1",
     "react": "^18",
     "react-dom": "^18",
     "tailwind-merge": "^3.6.0"
@@ -22,6 +23,7 @@
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.4",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",

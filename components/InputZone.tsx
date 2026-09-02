@@ -5,15 +5,20 @@ import {
   UploadCloud,
   Sparkles,
   Trash2,
-  CheckCircle2,
+  FileText,
+  FileSpreadsheet,
+  Image as ImageIcon,
   Loader2,
+  X,
 } from 'lucide-react';
-import { DocumentType } from '@/lib/types';
+import { DocumentType, FileAttachment } from '@/lib/types';
 import { SAMPLE_DOCUMENTS } from '@/lib/samples';
 
 interface InputZoneProps {
   text: string;
   onChangeText: (text: string) => void;
+  fileAttachment: FileAttachment | null;
+  onSelectFileAttachment: (file: FileAttachment | null) => void;
   documentType?: DocumentType;
   onSelectDocumentType: (type: DocumentType) => void;
   onParse: () => void;
@@ -26,6 +31,8 @@ interface InputZoneProps {
 export const InputZone: React.FC<InputZoneProps> = ({
   text,
   onChangeText,
+  fileAttachment,
+  onSelectFileAttachment,
   onSelectDocumentType,
   onParse,
   isLoading,
@@ -34,7 +41,6 @@ export const InputZone: React.FC<InputZoneProps> = ({
   disabled,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [fileName, setFileName] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -62,31 +68,57 @@ export const InputZone: React.FC<InputZoneProps> = ({
   };
 
   const processFile = (file: File) => {
-    setFileName(file.name);
+    const isPDF = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+    const isImage = file.type.startsWith('image/');
+
     const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result;
-      if (typeof content === 'string') {
-        onChangeText(content);
-      }
-    };
-    reader.readAsText(file);
+
+    if (isPDF || isImage) {
+      reader.onload = (event) => {
+        const base64 = event.target?.result;
+        if (typeof base64 === 'string') {
+          onSelectFileAttachment({
+            name: file.name,
+            mimeType: isPDF ? 'application/pdf' : file.type || 'image/png',
+            base64,
+            sizeBytes: file.size,
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      // Text file
+      reader.onload = (event) => {
+        const content = event.target?.result;
+        if (typeof content === 'string') {
+          onChangeText(content);
+          onSelectFileAttachment(null);
+        }
+      };
+      reader.readAsText(file);
+    }
   };
 
   const loadSample = (type: DocumentType) => {
     onSelectDocumentType(type);
     onChangeText(SAMPLE_DOCUMENTS[type]?.rawText || '');
-    setFileName(`sample_${type}.txt`);
+    onSelectFileAttachment(null);
   };
 
   const handleClear = () => {
     onChangeText('');
-    setFileName(null);
+    onSelectFileAttachment(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const charCount = text.length;
-  const lineCount = text.trim() ? text.trim().split('\n').length : 0;
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const hasDataToParse = Boolean(text.trim().length > 0 || fileAttachment);
 
   return (
     <div className="w-full bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 sm:p-6 shadow-xs transition-colors">
@@ -140,45 +172,82 @@ export const InputZone: React.FC<InputZoneProps> = ({
           type="file"
           ref={fileInputRef}
           onChange={handleFileInput}
-          accept=".txt,.csv,.log,.md,.tsv,.json,.pdf"
+          accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.csv,.log,.md,.tsv"
           className="hidden"
         />
 
-        {/* Drag & Drop banner */}
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-          className={`w-full py-4 px-4 rounded-xl border border-dashed transition-all flex items-center justify-between cursor-pointer ${
-            isDragging
-              ? 'border-zinc-900 bg-zinc-50 dark:border-zinc-100 dark:bg-zinc-800/80'
-              : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 bg-zinc-50/50 dark:bg-zinc-950/40'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-400 shadow-xs">
-              <UploadCloud className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
-                {fileName ? (
-                  <span className="text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 inline" /> Loaded: {fileName}
-                  </span>
+        {/* File Attachment Card if file loaded */}
+        {fileAttachment ? (
+          <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-950/60 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-zinc-900 dark:bg-zinc-800 text-white flex items-center justify-center shadow-xs">
+                {fileAttachment.mimeType === 'application/pdf' ? (
+                  <FileText className="w-5 h-5 text-red-400" />
+                ) : fileAttachment.mimeType.startsWith('image/') ? (
+                  <ImageIcon className="w-5 h-5 text-purple-400" />
                 ) : (
-                  'Drop raw document text file here, or click to browse'
+                  <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
                 )}
-              </p>
-              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                Accepts plain text, PDF exports, bank OCR dumps, or paste directly below
-              </p>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                    {fileAttachment.name}
+                  </span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    {fileAttachment.mimeType === 'application/pdf'
+                      ? 'PDF Document'
+                      : fileAttachment.mimeType.startsWith('image/')
+                      ? 'Image Scan / Receipt'
+                      : 'Data File'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  {formatFileSize(fileAttachment.sizeBytes)} • Ready for AI Vision / OCR Extraction
+                </p>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => onSelectFileAttachment(null)}
+              className="p-1.5 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors cursor-pointer"
+              title="Remove attached file"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium px-2.5 py-1 bg-white dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700 hidden sm:inline-block">
-            Browse files
-          </span>
-        </div>
+        ) : (
+          /* Drag & Drop banner */
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`w-full py-5 px-4 rounded-xl border border-dashed transition-all flex items-center justify-between cursor-pointer ${
+              isDragging
+                ? 'border-zinc-900 bg-zinc-50 dark:border-zinc-100 dark:bg-zinc-800/80'
+                : 'border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-600 bg-zinc-50/50 dark:bg-zinc-950/40'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-600 dark:text-zinc-400 shadow-xs">
+                <UploadCloud className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                  Drop PDF statement, image receipt, or document text here
+                </p>
+                <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Direct support for <strong className="text-zinc-700 dark:text-zinc-300">.PDF</strong>, <strong className="text-zinc-700 dark:text-zinc-300">.PNG</strong>, <strong className="text-zinc-700 dark:text-zinc-300">.JPG</strong>, or copy/paste raw text below
+                </p>
+              </div>
+            </div>
+            <span className="text-xs text-zinc-600 dark:text-zinc-400 font-medium px-3 py-1.5 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 hidden sm:inline-block">
+              Browse files
+            </span>
+          </div>
+        )}
 
         {/* Text Area */}
         <div className="relative">
@@ -186,17 +255,21 @@ export const InputZone: React.FC<InputZoneProps> = ({
             value={text}
             onChange={(e) => onChangeText(e.target.value)}
             disabled={disabled || isLoading}
-            placeholder="Paste raw unstructured document text here (e.g. statement lines, invoice bills, lease contract terms)..."
-            rows={8}
+            placeholder={
+              fileAttachment
+                ? 'Optional: Add special extraction instructions or notes about this file...'
+                : 'Or paste raw unstructured document text here (statement lines, invoices, lease clauses)...'
+            }
+            rows={fileAttachment ? 3 : 7}
             className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 p-3.5 font-mono text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-100 transition-all resize-y bg-zinc-50/30 dark:bg-zinc-950/60"
           />
 
-          {text && (
+          {(text || fileAttachment) && (
             <button
               onClick={handleClear}
               type="button"
               className="absolute top-3 right-3 p-1.5 text-zinc-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-md transition-colors cursor-pointer"
-              title="Clear text"
+              title="Clear all"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -206,16 +279,24 @@ export const InputZone: React.FC<InputZoneProps> = ({
         {/* Footer info & CTA Button */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
           <div className="flex items-center gap-4 text-xs text-zinc-500 dark:text-zinc-400">
-            <span>
-              <strong className="font-semibold text-zinc-700 dark:text-zinc-200">{lineCount}</strong> lines
-            </span>
-            <span>•</span>
-            <span>
-              <strong className="font-semibold text-zinc-700 dark:text-zinc-200">{charCount}</strong> characters
-            </span>
+            {fileAttachment ? (
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                ✓ Attached: {fileAttachment.name}
+              </span>
+            ) : (
+              <>
+                <span>
+                  <strong className="font-semibold text-zinc-700 dark:text-zinc-200">{text.trim() ? text.trim().split('\n').length : 0}</strong> lines
+                </span>
+                <span>•</span>
+                <span>
+                  <strong className="font-semibold text-zinc-700 dark:text-zinc-200">{text.length}</strong> chars
+                </span>
+              </>
+            )}
             <span>•</span>
             <span className="text-zinc-500 dark:text-zinc-400">
-              {forceOffline ? 'Mode: 100% Offline' : 'Mode: Gemini 1.5 Flash AI'}
+              {forceOffline ? 'Mode: Offline' : 'Mode: Gemini Flash Vision OCR'}
             </span>
           </div>
 
@@ -223,13 +304,13 @@ export const InputZone: React.FC<InputZoneProps> = ({
           <button
             type="button"
             onClick={onParse}
-            disabled={!text.trim() || isLoading || disabled}
+            disabled={!hasDataToParse || isLoading || disabled}
             className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200 text-white text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer"
           >
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin text-zinc-300 dark:text-zinc-700" />
-                <span>Structuring Data...</span>
+                <span>{fileAttachment ? 'Running OCR & Structuring...' : 'Structuring Data...'}</span>
               </>
             ) : (
               <>
